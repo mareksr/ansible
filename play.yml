@@ -19,6 +19,7 @@
      - http://ftp.piotrkosoft.net/pub/mirrors/ftp.apache.org//apr/apr-util-1.5.4.tar.gz
      - http://ftp.piotrkosoft.net/pub/mirrors/ftp.apache.org//httpd/httpd-{{ apache_version }}.tar.gz
      - http://ftp.piotrkosoft.net/pub/mirrors/ftp.apache.org//apr/apr-1.5.2.tar.gz
+     - http://mpm-itk.sesse.net/mpm-itk-2.4.7-04.tar.gz
 
    - name: Unarchive apache 
      unarchive: src=/usr/src/{{ item }}  dest=/usr/src copy=no
@@ -26,6 +27,7 @@
      - httpd-{{ apache_version }}.tar.gz
      - apr-util-1.5.4.tar.gz
      - apr-1.5.2.tar.gz
+     - mpm-itk-2.4.7-04.tar.gz
 
    - stat: path=/usr/local/apr-1.5.2
      register: optional_file_apr
@@ -64,12 +66,13 @@
      - ./go.sh
      - make &> /dev/null
      - make install &> /dev/null
+   - name: MPM-ITK
+     shell:  chdir="/usr/src/mpm-itk-2.4.7-04" {{ item }}
+     with_items:
+     - ./configure --with-apxs={{ apache_dest_dir }}/apache2-{{ apache_version }}/bin/apxs
+     - make
+     - make install
 
-   - name: Remove apache2 link
-     file: path=/usr/local/apache2 state=absent
-
-   - name: Link
-     file: src=/shared/apache2-{{ apache_version }} dest=/usr/local/apache2 state=link
 
    - name: Remove config
      file: path=/shared/apache2-{{ apache_version }}/conf state=absent
@@ -77,6 +80,10 @@
    - name: Copy2
      shell: cp -Rp /shared/apache2-{{ apache_oldversion }}/conf /shared/apache2-{{ apache_version }}
 
+   - name: Remove apache2 link
+     file: path=/usr/local/apache2 state=absent
+   - name: Link apache2
+     file: src=/shared/apache2-{{ apache_version }} dest=/usr/local/apache2 state=link
 
 #     synchronize: src=/shared/apache2-{{ apache_oldversion }}/conf dest=/shared/apache2-{{ apache_version }} rsync_opts=--log-file=/dev/null
 #     delegate_to: "{{ inventory_hostname }}"
