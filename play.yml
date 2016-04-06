@@ -1,0 +1,61 @@
+---
+- hosts: test
+  vars:
+     apache_version: 2.4.18
+     apache_dest_dir: /shared
+  tasks:
+   - name: Install depediences
+     yum: name={{ item }} state=latest
+     with_items:
+     - pcre-devel
+     - pcre-static
+     - openssl-devel
+
+   - name: Downloading apache
+     get_url: url={{ item }}  dest=/usr/src
+     with_items:
+     - http://ftp.piotrkosoft.net/pub/mirrors/ftp.apache.org//apr/apr-util-1.5.4.tar.gz
+     - http://ftp.piotrkosoft.net/pub/mirrors/ftp.apache.org//httpd/httpd-{{ apache_version }}.tar.gz
+     - http://ftp.piotrkosoft.net/pub/mirrors/ftp.apache.org//apr/apr-1.5.2.tar.gz
+
+   - name: Unarchive apache 
+     unarchive: src=/usr/src/{{ item }}  dest=/usr/src copy=no
+     with_items:
+     - httpd-{{ apache_version }}.tar.gz
+     - apr-util-1.5.4.tar.gz
+     - apr-1.5.2.tar.gz
+
+   - name: Instal apr
+     command:  chdir="/usr/src/apr-1.5.2" {{ item }}
+     with_items:
+     - ./configure --prefix=/usr/local/apr-1.5.2
+     - make
+     - make install
+
+   - name: Instal apr-util
+     command:  chdir="/usr/src/apr-util-1.5.4" {{ item }}
+     with_items:
+     - ./configure --prefix=/usr/local/apr-util-1.5.4 --with-apr=/usr/local/apr-1.5.2
+     - make
+     - make install
+
+   - name: Creates directory
+     file: path={{ apache_dest_dir }} state=directory
+
+   - name: Copy go.sh file
+     copy: src={{ item.src }} dest={{ item.dest }} mode="755"
+     with_items:
+     - { src: go.sh, dest: "/usr/src/httpd-{{ apache_version }}/go.sh" }
+
+   - name: Add line
+     replace: dest=/usr/src/httpd-{{ apache_version }}/go.sh regexp=APACHE_VERSION replace={{ apache_version }}
+
+   - name: Compile
+     shell: chdir=/usr/src/httpd-{{ apache_version }} {{ item }}
+     with_items:
+     - ./go.sh
+     - make &> /dev/null
+     - make install &> /dev/null
+   - name: Link
+     file: src=/shared/apache2-{{ apache_version }} dest=/usr/local/apache2-{{ apache_version }} state=link
+
