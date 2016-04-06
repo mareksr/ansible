@@ -1,7 +1,9 @@
 ---
+#apache upgrade
 - hosts: test
   vars:
      apache_version: 2.4.18
+     apache_oldversion: 2.4.17
      apache_dest_dir: /shared
   tasks:
    - name: Install depediences
@@ -25,15 +27,21 @@
      - apr-util-1.5.4.tar.gz
      - apr-1.5.2.tar.gz
 
+   - stat: path=/usr/local/apr-1.5.2
+     register: optional_file_apr
    - name: Instal apr
      command:  chdir="/usr/src/apr-1.5.2" {{ item }}
+     when: optional_file_apr.stat is not defined
      with_items:
      - ./configure --prefix=/usr/local/apr-1.5.2
      - make
      - make install
 
-   - name: Instal apr-util
+   - stat: path=/usr/local/apr-util-1.5.2
+     register: optional_file_apr_util
+   - name: Install apr-util
      command:  chdir="/usr/src/apr-util-1.5.4" {{ item }}
+     when: optional_file_apr_util.stat is not defined
      with_items:
      - ./configure --prefix=/usr/local/apr-util-1.5.4 --with-apr=/usr/local/apr-1.5.2
      - make
@@ -56,6 +64,20 @@
      - ./go.sh
      - make &> /dev/null
      - make install &> /dev/null
+
+   - name: Remove apache2 link
+     file: path=/usr/local/apache2 state=absent
+
    - name: Link
-     file: src=/shared/apache2-{{ apache_version }} dest=/usr/local/apache2-{{ apache_version }} state=link
+     file: src=/shared/apache2-{{ apache_version }} dest=/usr/local/apache2 state=link
+
+   - name: Remove config
+     file: path=/shared/apache2-{{ apache_version }}/conf state=absent
+
+   - name: Copy2
+     shell: cp -Rp /shared/apache2-{{ apache_oldversion }}/conf /shared/apache2-{{ apache_version }}
+
+
+#     synchronize: src=/shared/apache2-{{ apache_oldversion }}/conf dest=/shared/apache2-{{ apache_version }} rsync_opts=--log-file=/dev/null
+#     delegate_to: "{{ inventory_hostname }}"
 
