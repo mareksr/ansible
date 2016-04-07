@@ -19,25 +19,25 @@
   - stat: path=/usr/local/libjpeg-{{ libjpeg_version }}
     register: libjpeg
   - name: Libjpeg
-    include: ../deps/libjpeg.yml
+    include: ../include/libjpeg.yml
     when: libjpeg.stat.isdir is not defined or update_libjpeg
 
   - stat: path=/usr/local/libpng-{{ libpng_version }}
     register: libpng
   - name: Libpng
-    include: ../deps/libpng.yml
+    include: ../include/libpng.yml
     when: libpng.stat.isdir is not defined or update_libpng
 
   - stat: path=/usr/local/mysql-{{ mysql_version }}
     register: mysql
   - name: Mysql
-    include: ../deps/mysql.yml
+    include: ../include/mysql.yml
     when: mysql.stat.isdir is not defined or update_mysql
 
   - stat: path=/usr/local/postgresql-{{ pg_version }}
     register: pg
   - name: Pg
-    include: ../deps/postgresql.yml
+    include: ../include/postgresql.yml
     when: pg.stat.isdir is not defined or update_postgresql
 
   - name: Install depedences
