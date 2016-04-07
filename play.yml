@@ -66,6 +66,7 @@
      - ./go.sh
      - make &> /dev/null
      - make install &> /dev/null
+
    - name: MPM-ITK
      shell:  chdir="/usr/src/mpm-itk-2.4.7-04" {{ item }}
      with_items:
