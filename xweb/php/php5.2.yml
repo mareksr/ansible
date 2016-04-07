@@ -69,7 +69,7 @@
   - name: Copy go.sh file
     copy: src={{ item.src }} dest={{ item.dest }} mode="755"
     with_items:
-    - { src: go-5.2.sh, dest: "/usr/src/php-5.2.17/go.sh" }
+    - { src: ../scripts/go-5.2.sh, dest: "/usr/src/php-5.2.17/go.sh" }
 
   - name: Add line
     replace: dest={{ item.dest }} regexp={{ item.regexp }} replace={{ item.replace }}

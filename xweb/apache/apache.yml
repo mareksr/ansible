@@ -55,7 +55,7 @@
    - name: Copy go.sh file
      copy: src={{ item.src }} dest={{ item.dest }} mode="755"
      with_items:
-     - { src: go.sh, dest: "/usr/src/httpd-{{ apache_version }}/go.sh" }
+     - { src: ../scripts/go.sh, dest: "/usr/src/httpd-{{ apache_version }}/go.sh" }
 
    - name: Add line
      replace: dest=/usr/src/httpd-{{ apache_version }}/go.sh regexp=APACHE_VERSION replace={{ apache_version }}
