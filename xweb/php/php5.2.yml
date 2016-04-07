@@ -3,6 +3,7 @@
 
 - hosts: test
   vars:
+     php_version: 5.2.17
      mysql_version: 5.6.29
      pg_version: 9.5.2
      apache_version: 2.4.18
@@ -10,10 +11,10 @@
      libjpeg_version: 6b
 
      update_libpng: true
-     update_libjpeg: false
+     update_libjpeg: true
      update_mysql: false
      update_postgresql: false
-     update_php: false
+     update_php: true
   tasks:
 
   - stat: path=/usr/local/libjpeg-{{ libjpeg_version }}
@@ -56,34 +57,34 @@
   - name: php52
     get_url: url={{ item }}  dest=/usr/src
     with_items:
-    - http://museum.php.net/php5/php-5.2.17.tar.gz
+    - http://museum.php.net/php5/php-{{ php_version }}.tar.gz
     - http://php52-backports.googlecode.com/files/php52-backports-security-20130717.patch
 
   - name: Unarchive apache
     unarchive: src=/usr/src/{{ item }}  dest=/usr/src copy=no
     with_items:
-    - php-5.2.17.tar.gz
+    - php-{{ php_version }}.tar.gz
 
   - name: patching
-    shell: patch -p1 < /usr/src/php52-backports-security-20130717.patch chdir=/usr/src/php-5.2.17
+    shell: patch -p1 < /usr/src/php52-backports-security-20130717.patch chdir=/usr/src/php-{{ php_version }}
   - name: Copy go.sh file
     copy: src={{ item.src }} dest={{ item.dest }} mode="755"
     with_items:
-    - { src: ../scripts/go-5.2.sh, dest: "/usr/src/php-5.2.17/go.sh" }
+    - { src: ../scripts/go-5.2.sh, dest: "/usr/src/php-{{ php_version }}/go.sh" }
 
   - name: Add line
     replace: dest={{ item.dest }} regexp={{ item.regexp }} replace={{ item.replace }}
     with_items:
-    - { dest: /usr/src/php-5.2.17/go.sh, regexp: MYSQL_VERSION, replace: "{{ mysql_version }}" }
-    - { dest: /usr/src/php-5.2.17/go.sh, regexp: PG_VERSION, replace: "{{ pg_version }}" }
-    - { dest: /usr/src/php-5.2.17/go.sh, regexp: LIBPNG_VERSION, replace: "{{ libpng_version }}" }
-    - { dest: /usr/src/php-5.2.17/go.sh, regexp: LIBJPEG_VERSION, replace: "{{ libjpeg_version }}" }
+    - { dest: "/usr/src/php-{{ php_version }}/go.sh", regexp: MYSQL_VERSION, replace: "{{ mysql_version }}" }
+    - { dest: "/usr/src/php-{{ php_version }}/go.sh", regexp: PG_VERSION, replace: "{{ pg_version }}" }
+    - { dest: "/usr/src/php-{{ php_version }}/go.sh", regexp: LIBPNG_VERSION, replace: "{{ libpng_version }}" }
+    - { dest: "/usr/src/php-{{ php_version }}/go.sh", regexp: LIBJPEG_VERSION, replace: "{{ libjpeg_version }}" }
 
   
-  - stat: path=/usr/local/php-5.2.17
+  - stat: path=/usr/local/php-{{ php_version }}
     register: php52
   - name: Installing
-    shell:  chdir="/usr/src/php-5.2.17" {{ item }}
+    shell:  chdir="/usr/src/php-{{ php_version }}" {{ item }}
     with_items:
     - ./go.sh &> /dev/null
     - make  &> /dev/null
@@ -93,6 +94,6 @@
   - stat: path=/usr/local/apache2/modules/libphp5.so
     register: libphp5
   - name: Rename module
-    command: mv /usr/local/apache2/modules/libphp5.so /usr/local/apache2/modules/libphp5.2.17.so
+    command: mv /usr/local/apache2/modules/libphp5.so /usr/local/apache2/modules/libphp{{ php_version }}.so
     when: libphp5.stat.isfile is defined
   
