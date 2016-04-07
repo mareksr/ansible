@@ -1,11 +1,11 @@
   - name: Install sources
-    get_url: url=http://bit.ly/1RZhyqH dest=/usr/src/libpng.1.6.21.tar.gz
+    get_url: url=http://bit.ly/1RZhyqH dest={{ src_dir }}/libpng.1.6.21.tar.gz
   - name: Unarch
-    unarchive: src=/usr/src/{{ item }}  dest=/usr/src copy=no
+    unarchive: src={{ src_dir }}/{{ item }}  dest={{ src_dir }} copy=no
     with_items:
     - libpng.1.6.21.tar.gz
   - name: Configure
-    shell:  chdir="/usr/src/libpng-1.6.21" {{ item }}
+    shell:  chdir="{{ src_dir }}/libpng-1.6.21" {{ item }}
     with_items:
     - ./configure --prefix=/usr/local/libpng-1.6.21 --enable-shared  &> /dev/null
     - make &> /dev/null

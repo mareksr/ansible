@@ -4,13 +4,13 @@
     - cmake
     - ncurses-devel
   - name: Mysql Install sources
-    get_url: url=https://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.29.tar.gz dest=/usr/src/
+    get_url: url=https://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.29.tar.gz dest={{ src_dir }}/
   - name: Unarch
-    unarchive: src=/usr/src/{{ item }}  dest=/usr/src copy=no
+    unarchive: src={{ src_dir }}/{{ item }}  dest={{ src_dir }} copy=no
     with_items:
     - mysql-5.6.29.tar.gz
   - name: Mysql Configure
-    shell:  chdir="/usr/src/mysql-5.6.29" {{ item }}
+    shell:  chdir="{{ src_dir }}/mysql-5.6.29" {{ item }}
     with_items:
     - cmake  -DCMAKE_INSTALL_PREFIX=/usr/local/mysql-5.6.29
     - make &> /dev/null
