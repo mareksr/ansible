@@ -1,0 +1,29 @@
+  - name: Install sources
+    get_url: url=http://bit.ly/1UJS3xh dest=/usr/src/jpegsrc.v6b.tar.gz
+  - name: Unarch
+    unarchive: src=/usr/src/{{ item }}  dest=/usr/src copy=no
+    with_items:
+    - jpegsrc.v6b.tar.gz
+  - name: make dir
+    file: path={{ item }} state=directory
+    with_items:
+    - /usr/local/libjpeg-6b/
+    - /usr/local/libjpeg-6b/man
+    - /usr/local/libjpeg-6b/man/man1
+    - /usr/local/libjpeg-6b/bin
+    - /usr/local/libjpeg-6b/lib
+    - /usr/local/libjpeg-6b/include
+
+
+  - name: Configure
+    command:  chdir="/usr/src/jpeg-6b" {{ item }}
+    with_items:
+    - ./configure --prefix=/usr/local/libjpeg-6b --enable-shared
+  - name: Add line
+    replace: dest=/usr/src/jpeg-6b/Makefile regexp=\.\/libtool replace=libtool
+  - name: Make
+    shell:  chdir="/usr/src/jpeg-6b" {{ item }}
+    with_items:
+    - make
+    - make install
+

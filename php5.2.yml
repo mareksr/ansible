@@ -1,0 +1,50 @@
+---
+#php 5.2
+
+- hosts: test
+  vars:
+     apache_version: 2.4.18
+  tasks:
+
+  - stat: path=/usr/local/libjpeg-6b
+    register: libjpeg
+  - name: Libjpeg
+    include: libjpeg.yml
+    when: libjpeg.stat.isdir is not defined
+
+  - stat: path=/usr/local/libpng-1.6.21
+    register: libpng
+  - name: Libpng
+    include: libpng.yml
+    when: libpng.stat.isdir is not defined
+
+  - name: Install depediences
+    yum: name={{ item }} state=latest
+    with_items:
+    - libxml2-devel
+    - libcurl-devel
+    - freetype-devel
+    - freetype
+    - libmcrypt-devel
+  - name: php52
+    get_url: url={{ item }}  dest=/usr/src
+    with_items:
+    - http://museum.php.net/php5/php-5.2.17.tar.gz
+    - http://php52-backports.googlecode.com/files/php52-backports-security-20130717.patch
+  - name: Unarchive apache
+    unarchive: src=/usr/src/{{ item }}  dest=/usr/src copy=no
+    with_items:
+    - php-5.2.17.tar.gz
+  - name: patching
+    shell: patch -p1 < /usr/src/php52-backports-security-20130717.patch chdir=/usr/src/php-5.2.17
+  - name: Copy go.sh file
+    copy: src={{ item.src }} dest={{ item.dest }} mode="755"
+    with_items:
+    - { src: go-5.2.sh, dest: "/usr/src/php-5.2.17/go.sh" }
+
+#  - name: Installing
+#    command:  chdir="/usr/src/php-5.2.17" {{ item }}
+#    with_items:
+#    - ./configure --prefix=/usr/local/php-5.2.17  --disable-cgi
+#    - make  &> /dev/null
+#    - make install  &> /dev/null
