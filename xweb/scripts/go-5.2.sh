@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./configure --prefix=/usr/local/php-5.2.17 --with-apxs2=/usr/local/apache2/bin/apxs \
+./configure --prefix=/usr/local/php-5.2.17-DATE --with-apxs2=/usr/local/apache2/bin/apxs \
 --with-libxml-dir=/usr/lib64/  \
 --enable-exif --enable-gd-native-ttf \
 --with-xsl \

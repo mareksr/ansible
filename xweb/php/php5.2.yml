@@ -5,6 +5,7 @@
   vars:
      src_dir: /usr/src/ansible
 
+     php_old_dir: /usr/local/php-5.2.17
      php_version: 5.2.17
      mysql_version: 5.6.29
      pg_version: 9.5.2
@@ -12,24 +13,29 @@
      libpng_version: 1.6.21
      libjpeg_version: 6b
 
-     update_libpng: true
-     update_libjpeg: true
+     update_libpng: false
+     update_libjpeg: false
      update_mysql: false
      update_postgresql: false
-     update_php: true
-  tasks:
+     update_ionloader: false
+     update_php: false
 
+  pre_tasks:
   - name: make dir
     file: path={{ item }} state=directory
     with_items:
     - "{{ src_dir }}"
+
+  - name: IonLoader
+    include: ../include/ionloader.yml
+    when: update_ionloader
 
   - stat: path=/usr/local/libjpeg-{{ libjpeg_version }}
     register: libjpeg
   - name: Libjpeg
     include: ../include/libjpeg.yml
     when: libjpeg.stat.isdir is not defined or update_libjpeg
-
+  
   - stat: path=/usr/local/libpng-{{ libpng_version }}
     register: libpng
   - name: Libpng
@@ -61,13 +67,17 @@
     - php-mbstring
     - libtool-ltdl-devel
 
+  tasks:
+  - action: shell date '+%F' 
+    register: mydate
+
   - name: php52
     get_url: url={{ item }}  dest={{ src_dir }}
     with_items:
     - http://museum.php.net/php5/php-{{ php_version }}.tar.gz
     - http://php52-backports.googlecode.com/files/php52-backports-security-20130717.patch
 
-  - name: Unarchive apache
+  - name: Unarchive php
     unarchive: src={{ src_dir }}/{{ item }}  dest={{ src_dir }} copy=no
     with_items:
     - php-{{ php_version }}.tar.gz
@@ -86,7 +96,11 @@
     - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: PG_VERSION, replace: "{{ pg_version }}" }
     - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: LIBPNG_VERSION, replace: "{{ libpng_version }}" }
     - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: LIBJPEG_VERSION, replace: "{{ libjpeg_version }}" }
+    - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: DATE, replace: "{{ mydate.stdout }}" }
 
+  - name: Change prefork
+    replace: dest={{ src_dir }}/php-{{ php_version }}/configure regexp='`\$APXS -q MPM_NAME`' replace=prefork
+    
   
   - stat: path=/usr/local/php-{{ php_version }}
     register: php52
@@ -98,6 +112,8 @@
     - make install  &> /dev/null
     when: php52.stat.isdir is not defined or update_php
 
+  - name: Copy ini file
+    shell: cp {{ php_old_dir }}/php.ini /usr/local/php-{{ php_version }}-{{ mydate.stdout }}
   - stat: path=/usr/local/apache2/modules/libphp5.so
     register: libphp5
   - name: Rename module
