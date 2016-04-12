@@ -1,11 +1,12 @@
 ---
 #php 5.2
 
-- hosts: test
+- hosts: web
   vars:
      src_dir: /usr/src/ansible
 
-     php_old_dir: /usr/local/php-5.2.17
+     php_old_dir: /shared/php-5.2.17
+     php_dir: /shared
      php_version: 5.2.17
      mysql_version: 5.6.29
      pg_version: 9.5.2
@@ -97,6 +98,8 @@
     - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: LIBPNG_VERSION, replace: "{{ libpng_version }}" }
     - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: LIBJPEG_VERSION, replace: "{{ libjpeg_version }}" }
     - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: DATE, replace: "{{ mydate.stdout }}" }
+    - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: PHP_DIR, replace: "{{ php_dir }}" }
+    - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: PHP_VERSION, replace: "{{ php_version }}" }
 
   - name: Change prefork
     replace: dest={{ src_dir }}/php-{{ php_version }}/configure regexp='`\$APXS -q MPM_NAME`' replace=prefork
@@ -112,11 +115,14 @@
     - make install  &> /dev/null
     when: php52.stat.isdir is not defined or update_php
 
-  - name: Copy ini file
-    shell: cp {{ php_old_dir }}/php.ini /usr/local/php-{{ php_version }}-{{ mydate.stdout }}
+  - name: Sync
+    shell: rsync  -av {{ php_old_dir }}/ {{ php_dir }}/php-{{ php_version }}-{{ mydate.stdout }} --ignore-existing
+
   - stat: path=/usr/local/apache2/modules/libphp5.so
     register: libphp5
   - name: Rename module
     command: mv /usr/local/apache2/modules/libphp5.so /usr/local/apache2/modules/libphp{{ php_version }}.so
     when: libphp5.stat.isfile is defined
   
+  #- name: Copy ini file
+  #  shell: cp {{ php_old_dir }}/php.ini {{ php_dir }}/php-{{ php_version }}-{{ mydate.stdout }}
