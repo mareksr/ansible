@@ -1,15 +1,15 @@
 ---
-#php 5.2a
+#php 5.3
 
 - hosts: web
   vars:
      src_dir: /usr/src/ansible
 
-     php_old_dir: /shared/php-5.2.17-2016-04-13a
-     php_old_version: 5.2.17-2016-04-13a
+     php_old_dir: /shared/php-5.3.28
+     php_old_version: 5.3.28
 
      php_dir: /shared
-     php_version: 5.2.17
+     php_version: 5.3.29
      mysql_version: 5.6.29
      pg_version: 9.5.2
      apache_version: 2.4.18
@@ -20,7 +20,7 @@
      update_libjpeg: false
      update_mysql: false
      update_postgresql: false
-     update_ionloader: false
+     update_imap: false
      update_php: true
 
   pre_tasks:
@@ -28,11 +28,6 @@
     file: path={{ item }} state=directory
     with_items:
     - "{{ src_dir }}"
-
-  - name: IonLoader
-    include: ../include/ionloader.yml
-    when: update_ionloader
-
   - stat: path=/usr/local/libjpeg-{{ libjpeg_version }}
     register: libjpeg
   - name: Libjpeg
@@ -57,6 +52,12 @@
     include: ../include/postgresql.yml
     when: pg.stat.isdir is not defined or update_postgresql
 
+  - stat: path=/usr/local/imap-2007f
+    register: imap
+  - name: IMAP
+    include: ../include/imap.yml
+    when: imap.stat.isdir is not defined or update_imap
+
   - name: Install depedences
     yum: name={{ item }} state=latest
     with_items:
@@ -69,29 +70,28 @@
     - libxslt-devel
     - php-mbstring
     - libtool-ltdl-devel
+    - libc-client-devel
 
   tasks:
-  - action: shell date '+%Fb'
+
+  - action: shell date '+%Fa'
     register: mydate
 
   - block:
-    - name: php52
+    - name: php53
       get_url: url={{ item }}  dest={{ src_dir }}
       with_items:
-      - http://museum.php.net/php5/php-{{ php_version }}.tar.gz
-      - http://php52-backports.googlecode.com/files/php52-backports-security-20130717.patch
+      - http://pl1.php.net/get/php-5.3.29.tar.gz/from/this/mirror
 
-    - name: Unarchive php
+    - name: Unarchive apache
       unarchive: src={{ src_dir }}/{{ item }}  dest={{ src_dir }} copy=no
       with_items:
       - php-{{ php_version }}.tar.gz
 
-    - name: patching
-      shell: patch -p1 < {{ src_dir }}/php52-backports-security-20130717.patch chdir={{ src_dir }}/php-{{ php_version }}
     - name: Copy go.sh file
       copy: src={{ item.src }} dest={{ item.dest }} mode="755"
       with_items:
-      - { src: ../scripts/go-5.2.sh, dest: "{{ src_dir }}/php-{{ php_version }}/go.sh" }
+      - { src: ../scripts/go-5.3.sh, dest: "{{ src_dir }}/php-{{ php_version }}/go.sh" }
 
     - name: Add line
       replace: dest={{ item.dest }} regexp={{ item.regexp }} replace={{ item.replace }}
@@ -104,16 +104,7 @@
       - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: PHP_DIR, replace: "{{ php_dir }}" }
       - { dest: "{{ src_dir }}/php-{{ php_version }}/go.sh", regexp: PHP_VERSION, replace: "{{ php_version }}" }
 
-    - name: Change prefork
-      replace: dest={{ src_dir }}/php-{{ php_version }}/configure regexp='`\$APXS -q MPM_NAME`' replace=prefork
 
-    - name: Change AP_UNIXD_CONFIG
-      replace: dest={{ item.dest }} regexp={{ item.regexp }} replace={{ item.replace }}
-      with_items:
-      - { dest: "{{ src_dir }}/php-{{ php_version }}/sapi/apache2handler/php_functions.c", regexp: unixd_config; , replace: ap_unixd_config; }
-      - { dest: "{{ src_dir }}/php-{{ php_version }}/sapi/apache2handler/php_functions.c", regexp: unixd_config.user_name, replace: ap_unixd_config.user_name }
-      - { dest: "{{ src_dir }}/php-{{ php_version }}/sapi/apache2handler/php_functions.c", regexp: unixd_config.user_id, replace: ap_unixd_config.user_id }
-      - { dest: "{{ src_dir }}/php-{{ php_version }}/sapi/apache2handler/php_functions.c", regexp: unixd_config.group_id, replace: ap_unixd_config.group_id }
 
     - stat: path=/usr/local/php-{{ php_version }}
       register: php52
@@ -131,7 +122,6 @@
        dest: "{{ php_dir }}/php-{{ php_version }}-{{ mydate.stdout }}"
        rsync_opts: --ignore-existing
       delegate_to: "{{ inventory_hostname }}"
-
 
     - name: Add line 2
       replace: dest={{ item.dest }} regexp={{ item.regexp }} replace={{ item.replace }}
@@ -169,6 +159,6 @@
           replace: "{{ php_version }}-{{ mydate.stdout }}"
         }
     - name: Change supervisor.conf
-      replace: dest=/etc/supervisord.conf regexp="{{ php_old_version }}" replace="{{ php_version }}-{{ mydate.stdout }}"
+      replace: dest=/etc/supervisord.conf regexp="httpd-{{ php_old_version }}" replace="httpd-{{ php_version }}-{{ mydate.stdout }}"
 
     when: update_php
